@@ -91,20 +91,18 @@ local function start_run(manual, custom_name)
     local next_id = #gold_digger_db.runs + 1
 
     local run = {
-        id         = next_id,
-        character  = char_name,
-        realm      = realm,
-        class      = class,
-        level      = level,
-        specID     = spec_id,
-        startTime  = now,
-        startMoney = money,
+        id          = next_id,
+        character   = char_name,
+        realm       = realm,
+        class       = class,
+        level       = level,
+        specID      = spec_id,
+        startTime   = now,
+        startMoney  = money,
         autoStarted = not manual,
         autoStopped = false,
-        customName = custom_name,
+        customName  = custom_name,
     }
-
-    run.customName = nil
 
     if instance then
         run.instanceName = instance.name
@@ -120,16 +118,18 @@ local function start_run(manual, custom_name)
 
     gold_digger.current_run = run
 
-    if custom_name then
-      print_msg(string.format(
-        "Run #%d started (%s).",
-        run.id, custom_name
-    ))
+    if custom_name and custom_name ~= "" then
+        print_msg(string.format(
+            "Run #%d started (%s).",
+            run.id,
+            custom_name
+        ))
     else
-    print_msg(string.format(
-        "Run #%d started for %s-%s in %s.",
-        run.id, char_name, realm, run.instanceName
-    ))
+        print_msg(string.format(
+            "Run #%d started for %s-%s in %s.",
+            run.id, char_name, realm, run.instanceName
+        ))
+    end
 end
 
 local function end_run(reason, auto)
@@ -153,9 +153,16 @@ local function end_run(reason, auto)
 
     table.insert(gold_digger_db.runs, run)
 
+    local label
+    if run.customName and run.customName ~= "" then
+        label = string.format("Run #%d (%s)", run.id, run.customName)
+    else
+        label = string.format("Run #%d", run.id)
+    end
+
     print_msg(string.format(
-        "Run #%d ended. Duration: %d sec. Gold change: %s.",
-        run.id,
+        "%s ended. Duration: %d sec. Gold change: %s.",
+        label,
         run.duration,
         format_money(run.goldDelta)
     ))
@@ -224,10 +231,11 @@ end
 
 local function show_help()
     print_msg("Commands:")
-    print_msg("/gd start   - Start a run manually")
-    print_msg("/gd stop    - Stop the current run")
-    print_msg("/gd stats   - Show summary stats")
-    print_msg("/gd help    - Show this help")
+    print_msg("/gd start          - Start a run manually (uses instance name)")
+    print_msg("/gd start <label>  - Start a run with a custom name (e.g. 'vendor cleanup')")
+    print_msg("/gd stop           - Stop the current run")
+    print_msg("/gd stats          - Show summary stats")
+    print_msg("/gd help           - Show this help")
 end
 
 ------------------------------------------------------------
@@ -237,20 +245,29 @@ SLASH_GOLD_DIGGER1 = "/gd"
 SLASH_GOLD_DIGGER2 = "/golddigger"
 
 SlashCmdList["GOLD_DIGGER"] = function(msg)
-    msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+    local raw = msg or ""
+    local trimmed = raw:gsub("^%s+", ""):gsub("%s+$", "")
+    local lower = trimmed:lower()
 
-    if msg:find("^start") then
-      -- strip the word "start" from the message
-      local custom = msg:sub(6):gsub("^%s+", "")
-      start_run(true, custom ~= "" and custom or nil)
+    -- /gd start [optional custom name]
+    if lower:sub(1, 5) == "start" then
+        -- anything after "start" (5 chars) is treated as optional custom label
+        local custom = trimmed:sub(6):gsub("^%s+", "")
+        if custom == "" then
+            custom = nil
+        end
+        start_run(true, custom)
 
-    elseif msg == "stop" or msg == "end" or msg == "e" then
+    elseif lower == "s" then
+        start_run(true, nil)
+
+    elseif lower == "stop" or lower == "end" or lower == "e" then
         end_run("manual", false)
 
-    elseif msg == "stats" or msg == "summary" then
+    elseif lower == "stats" or lower == "summary" then
         show_summary_stats()
 
-    elseif msg == "help" or msg == "" then
+    elseif lower == "help" or lower == "" then
         show_help()
 
     else
