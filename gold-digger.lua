@@ -74,7 +74,7 @@ end
 ------------------------------------------------------------
 -- Run control
 ------------------------------------------------------------
-local function start_run(manual)
+local function start_run(manual, custom_name)
     if gold_digger.current_run then
         print_msg("A run is already in progress. Use /gd stop first.")
         return
@@ -101,7 +101,10 @@ local function start_run(manual)
         startMoney = money,
         autoStarted = not manual,
         autoStopped = false,
+        customName = custom_name,
     }
+
+    run.customName = nil
 
     if instance then
         run.instanceName = instance.name
@@ -117,6 +120,12 @@ local function start_run(manual)
 
     gold_digger.current_run = run
 
+    if custom_name then
+      print_msg(string.format(
+        "Run #%d started (%s).",
+        run.id, custom_name
+    ))
+    else
     print_msg(string.format(
         "Run #%d started for %s-%s in %s.",
         run.id, char_name, realm, run.instanceName
@@ -230,8 +239,10 @@ SLASH_GOLD_DIGGER2 = "/golddigger"
 SlashCmdList["GOLD_DIGGER"] = function(msg)
     msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 
-    if msg == "start" or msg == "s" then
-        start_run(true)
+    if msg:find("^start") then
+      -- strip the word "start" from the message
+      local custom = msg:sub(6):gsub("^%s+", "")
+      start_run(true, custom ~= "" and custom or nil)
 
     elseif msg == "stop" or msg == "end" or msg == "e" then
         end_run("manual", false)
