@@ -2,7 +2,7 @@
 ## Title: gold-digger
 ## Notes: Tracks gold farming runs in MoP Classic
 ## Author: Chris
-## Version: 0.1
+## Version: 0.2
 ## SavedVariables: gold_digger_db
 
 gold-digger.lua
